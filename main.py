@@ -464,20 +464,7 @@ async def send_digests():
         except Exception as e:
             logger.error(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
-from aiohttp import web
-import threading
-import asyncio as async_io
 
-def run_http_server():
-    """Простой HTTP-сервер для Render (запускается в отдельном потоке)"""
-    async def handler(request):
-        return web.Response(text="✅ StudyBuddy Bot is running!")
-    
-    async def create_app():
-        app = web.Application()
-        app.router.add_get('/', handler)
-        app.router.add_get('/health', handler)
-        return app
     
     # Получаем порт из переменных окружения Render
 import threading
