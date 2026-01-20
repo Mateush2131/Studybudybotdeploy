@@ -2,11 +2,8 @@
 import logging
 import json
 import os
-DATA_DIR = "data"
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
-
-DATA_FILE = os.path.join(DATA_DIR, "user_data.json")
+import os
+from config import BOT_TOKEN
 from datetime import datetime
 from typing import Dict, List
 
