@@ -464,32 +464,64 @@ async def send_digests():
         except Exception as e:
             logger.error(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
-
-    
-    # Получаем порт из переменных окружения Render
-
-
-# ========== ГЛАВНАЯ ФУНКЦИЯ ==========
-# ========== HTTP-СЕРВЕР ДЛЯ RENDER ==========
+# ========== ПРОСТОЙ HTTP-СЕРВЕР ДЛЯ RENDER ==========
 import threading
 import socket
 
 def health_check_server():
     """Минимальный HTTP-сервер для health-check"""
-    port = 8080  # Используем другой порт
+    port = 10000  # Используем порт, который Render ожидает
     
     server = socket.socket()
-    server.bind(('0.0.0.0', port))
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    # Пробуем привязаться к порту, если занят - ждем и пробуем снова
+    connected = False
+    attempts = 0
+    
+    while not connected and attempts < 10:
+        try:
+            server.bind(('0.0.0.0', port))
+            connected = True
+            print(f"✅ Health-check сервер запущен на порту {port}")
+        except OSError:
+            attempts += 1
+            import time
+            time.sleep(1)
+    
+    if not connected:
+        print("⚠️ Не удалось запустить HTTP-сервер, но бот продолжит работу")
+        return
+    
     server.listen(1)
-    print(f"✅ Health-check сервер запущен на порту {port}")
     
     while True:
-        client, _ = server.accept()
-        # Простой ответ на любой запрос
-        client.send(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK')
-        client.close()
+        try:
+            client, _ = server.accept()
+            # Простой ответ на любой запрос
+            client.send(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK')
+            client.close()
+        except:
+            pass
 
 # Запускаем в фоновом режиме
-threading.Thread(target=health_check_server, daemon=True).start()
+http_thread = threading.Thread(target=health_check_server, daemon=True)
+http_thread.start()
+
+# ========== ГЛАВНАЯ ФУНКЦИЯ ==========
+async def main():
+    load_data()
+    logger.info("Бот запущен!")
+    
+    # Настройка планировщика
+    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    scheduler.add_job(send_digests, "cron", hour=8, minute=0)
+    scheduler.start()
+    logger.info("Планировщик запущен (утренние напоминания в 8:00)")
+    
+    # Запуск бота
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
     asyncio.run(main())
