@@ -2,8 +2,13 @@
 import logging
 import json
 import os
-import os
-from config import BOT_TOKEN
+
+# Получаем токен из переменных окружения Render
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    print("❌ ОШИБКА: BOT_TOKEN не найден в переменных окружения Render!")
+    exit(1)
+
 from datetime import datetime
 from typing import Dict, List
 
@@ -16,9 +21,6 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from config import BOT_TOKEN
-
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
