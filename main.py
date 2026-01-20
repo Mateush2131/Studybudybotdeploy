@@ -474,7 +474,24 @@ async def main():
     scheduler.add_job(send_digests, "cron", hour=8, minute=0)
     scheduler.start()
     logger.info("Планировщик запущен (утренние напоминания в 8:00)")
+    from aiohttp import web
+import threading
+
+# Фейковый HTTP-сервер для Render
+def run_http_server():
+    app = web.Application()
     
+    async def health_check(request):
+        return web.Response(text="Bot is running")
+    
+    app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
+    
+    web.run_app(app, host='0.0.0.0', port=8080)
+
+# Запустить HTTP-сервер в отдельном потоке
+http_thread = threading.Thread(target=run_http_server, daemon=True)
+http_thread.start()
     # Запуск бота
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
