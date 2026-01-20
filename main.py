@@ -464,6 +464,43 @@ async def send_digests():
         except Exception as e:
             logger.error(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
+from aiohttp import web
+import threading
+import asyncio as async_io
+
+def run_http_server():
+    """Простой HTTP-сервер для Render (запускается в отдельном потоке)"""
+    async def handler(request):
+        return web.Response(text="✅ StudyBuddy Bot is running!")
+    
+    async def create_app():
+        app = web.Application()
+        app.router.add_get('/', handler)
+        app.router.add_get('/health', handler)
+        return app
+    
+    # Получаем порт из переменных окружения Render
+    port = int(os.getenv('PORT', 10000))
+    
+    # Создаем и запускаем приложение
+    loop = async_io.new_event_loop()
+    async_io.set_event_loop(loop)
+    app = loop.run_until_complete(create_app())
+    
+    # Запускаем сервер
+    runner = web.AppRunner(app)
+    loop.run_until_complete(runner.setup())
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    loop.run_until_complete(site.start())
+    print(f"✅ HTTP-сервер запущен на порту {port}")
+    
+    # Бесконечный цикл
+    loop.run_forever()
+
+# Запускаем HTTP-сервер в отдельном потоке
+http_thread = threading.Thread(target=run_http_server, daemon=True)
+http_thread.start()
+
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 async def main():
     load_data()
@@ -474,27 +511,13 @@ async def main():
     scheduler.add_job(send_digests, "cron", hour=8, minute=0)
     scheduler.start()
     logger.info("Планировщик запущен (утренние напоминания в 8:00)")
-    from aiohttp import web
-import threading
-
-# Фейковый HTTP-сервер для Render
-def run_http_server():
-    app = web.Application()
     
-    async def health_check(request):
-        return web.Response(text="Bot is running")
-    
-    app.router.add_get('/', health_check)
-    app.router.add_get('/health', health_check)
-    
-    web.run_app(app, host='0.0.0.0', port=8080)
-
-# Запустить HTTP-сервер в отдельном потоке
-http_thread = threading.Thread(target=run_http_server, daemon=True)
-http_thread.start()
     # Запуск бота
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 if __name__ == "__main__":
     asyncio.run(main())
