@@ -498,60 +498,25 @@ threading.Thread(target=run_http_server, daemon=True).start()
 
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 # ========== HTTP-СЕРВЕР ДЛЯ RENDER ==========
-from aiohttp import web
 import threading
-import asyncio as async_io
+import socket
 
-def run_http_server():
-    """HTTP-сервер для Render (запускается в отдельном потоке)"""
-    # Используем обычные импорты внутри функции
-    import asyncio
-    from aiohttp import web
+def health_check_server():
+    """Минимальный HTTP-сервер для health-check"""
+    port = 8080  # Используем другой порт
     
-    async def handler(request):
-        return web.Response(text="✅ StudyBuddy Bot is running!")
+    server = socket.socket()
+    server.bind(('0.0.0.0', port))
+    server.listen(1)
+    print(f"✅ Health-check сервер запущен на порту {port}")
     
-    async def main_http():
-        app = web.Application()
-        app.router.add_get('/', handler)
-        app.router.add_get('/health', handler)
-        
-        port = int(os.getenv('PORT', 10000))
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', port)
-        await site.start()
-        print(f"✅ HTTP-сервер запущен на порту {port}")
-        
-        # Бесконечно ждем
-        await asyncio.Future()
-    
-    # Запускаем в отдельном event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(main_http())
-    finally:
-        loop.close()
+    while True:
+        client, _ = server.accept()
+        # Простой ответ на любой запрос
+        client.send(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK')
+        client.close()
 
-# Запускаем HTTP-сервер в отдельном потоке
-http_thread = threading.Thread(target=run_http_server, daemon=True)
-http_thread.start()
-
-# ========== ГЛАВНАЯ ФУНКЦИЯ ==========
-async def main():
-    load_data()
-    logger.info("Бот запущен!")
-    
-    # Настройка планировщика
-    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-    scheduler.add_job(send_digests, "cron", hour=8, minute=0)
-    scheduler.start()
-    logger.info("Планировщик запущен (утренние напоминания в 8:00)")
-    
-    # Запуск бота
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
-
+# Запускаем в фоновом режиме
+threading.Thread(target=health_check_server, daemon=True).start()
 if __name__ == "__main__":
     asyncio.run(main())
