@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Данные бота
+user_data.json
+
+# Конфигурация с токеном (НЕ ЗАЛИВАЕМ)
+config.py
+
+# Системные файлы
+.DS_Store
+Thumbs.db
