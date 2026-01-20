@@ -467,21 +467,7 @@ async def send_digests():
 
     
     # Получаем порт из переменных окружения Render
-import threading
-import socket
 
-def run_http_server():
-    port = int(os.getenv('PORT', 10000))
-    server = socket.socket()
-    server.bind(('0.0.0.0', port))
-    server.listen(5)
-    print(f"✅ HTTP-сервер запущен на порту {port}")
-    while True:
-        client, _ = server.accept()
-        client.send(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nOK')
-        client.close()
-
-threading.Thread(target=run_http_server, daemon=True).start()
 
 # ========== ГЛАВНАЯ ФУНКЦИЯ ==========
 # ========== HTTP-СЕРВЕР ДЛЯ RENDER ==========
